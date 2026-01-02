@@ -53,7 +53,7 @@ def get_ranges(getter, asn)
 end
 
 def ranges_chose
-  puts "enter the actual asn or press enter to use last known one (Yandex Cloud ASN 200350):"
+  puts "enter the asn number or press enter to use yandex cloud(ASN 200350):"
   line = STDIN.gets&.chomp
 
   if line.nil? || line.empty? || !(line =~ /^\d+$/)

@@ -6,7 +6,7 @@ require './ping'
 
 while true
   puts "What do you want to do?"
-  puts "1 - get ranges of ip for yandex cloud asn (#{ranges_filled? ? 'filled' : 'not filled'})"
+  puts "1 - get ranges of ip for asn (#{ranges_filled? ? 'filled' : 'not filled'})"
   puts "2 - check available ip ranges by ping"
   puts "0 - exit"
 
