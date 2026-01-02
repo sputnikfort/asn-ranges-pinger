@@ -3,6 +3,7 @@
 require 'json'
 require 'open3'
 require 'shellwords'
+require 'timeout'
 
 def start_ping
   available_ips = []
@@ -56,17 +57,42 @@ def icmp_ping_ok?(ip, count = 1)
       "ping -c #{count} #{escaped_ip}"
     end
 
-  stdout, stderr, status = Open3.capture3("#{cmd} 2>&1")
+  begin
+    out = ''
+    status = nil
+    Open3.popen3("#{cmd} 2>&1") do |_stdin, stdout, _stderr, wait_thr|
+      out_reader = Thread.new { stdout.read }
 
-  error_patterns = [
-    /Destination Port Unreachable/i,
-  ]
-
-  return false unless status.success? == true || stdout.match?(/ttl=/i)
-
-  error_patterns.each do |pattern|
-    return false if stdout.match?(pattern) || stderr.match?(pattern)
+      begin
+        # if the check takes longer than 2 seconds — consider the IP acceptable
+        Timeout.timeout(2) do
+          status = wait_thr.value
+        end
+        out = out_reader.value
+      rescue Timeout::Error
+        # timeout exceeded — terminate the process and consider the IP acceptable
+        begin
+          Process.kill('TERM', wait_thr.pid) rescue nil
+          sleep 0.1
+          Process.kill('KILL', wait_thr.pid) rescue nil
+        rescue StandardError
+          # noop
+        ensure
+          out = out_reader.value rescue ''
+        end
+        return true
+      ensure
+        out_reader.kill if out_reader.alive?
+      end
+    end
+  rescue StandardError
+    # on unexpected errors — do not consider the address acceptable
+    return false
   end
 
-  true
+  # after a fast check: consider the address acceptable if there is ttl or the process exited successfully
+  return true if out.match?(/ttl=/i)
+  return true if status&.success?
+
+  false
 end
