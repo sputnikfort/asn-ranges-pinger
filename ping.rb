@@ -11,15 +11,15 @@ def start_ping
     content = File.read("ranges.json")
     ranges = JSON.parse(content)
   rescue Errno::ENOENT
-    puts "Файл ranges.json не найден."
+    puts "File ranges.json not found."
     return []
   rescue JSON::ParserError
-    puts "Ошибка разбора ranges.json — неверный JSON."
+    puts "Failed to parse ranges.json — invalid JSON."
     return []
   end
 
   unless ranges.is_a?(Array) && !ranges.empty?
-    puts "ranges.json должен содержать массив IP-адресов."
+    puts "ranges.json must contain an array of IP addresses."
     return []
   end
 
@@ -58,14 +58,8 @@ def icmp_ping_ok?(ip, count = 1)
 
   stdout, stderr, status = Open3.capture3("#{cmd} 2>&1")
 
-  # базовые шаблоны ошибок в выводе
   error_patterns = [
     /Destination Port Unreachable/i,
-    /Destination Host Unreachable/i,
-    /Network is unreachable/i,
-    /General failure/i,
-    /100% packet loss/i,
-    /Request timed out/i
   ]
 
   return false unless status.success? == true || stdout.match?(/ttl=/i)
@@ -76,4 +70,3 @@ def icmp_ping_ok?(ip, count = 1)
 
   true
 end
-
